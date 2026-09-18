@@ -96,6 +96,31 @@ final class MulticastSendReport implements Countable
     }
 
     /**
+     * @return list<non-empty-string>
+     */
+    public function validFids(): array
+    {
+        return $this->successes()
+            ->filter(static fn(SendReport $report): bool => $report->target()->type() === MessageTarget::FID)
+            ->map(static fn(SendReport $report): string => $report->target()->value())
+        ;
+    }
+
+    /**
+     * Returns all provided Firebase Installation IDs that were not reachable.
+     *
+     * @return list<non-empty-string>
+     */
+    public function unknownFids(): array
+    {
+        return $this
+            ->filter(static fn(SendReport $report): bool => $report->target()->type() === MessageTarget::FID)
+            ->filter(static fn(SendReport $report): bool => $report->messageWasSentToUnknownToken())
+            ->map(static fn(SendReport $report): string => $report->target()->value())
+        ;
+    }
+
+    /**
      * Returns all provided registration tokens that were invalid.
      *
      * @return list<non-empty-string>

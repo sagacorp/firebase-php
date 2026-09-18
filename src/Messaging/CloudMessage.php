@@ -24,6 +24,7 @@ use function implode;
  * @phpstan-import-type WebPushConfigShape from WebPushConfig
  *
  * @phpstan-type MessageInputShape array{
+ *     fid?: non-empty-string,
  *     token?: non-empty-string,
  *     topic?: non-empty-string,
  *     condition?: non-empty-string,
@@ -37,6 +38,7 @@ use function implode;
  * }
  *
  * @phpstan-type MessageOutputShape array{
+ *     fid?: non-empty-string,
  *     token?: non-empty-string,
  *     topic?: non-empty-string,
  *     condition?: non-empty-string,
@@ -233,6 +235,17 @@ final class CloudMessage implements Message
     }
 
     /**
+     * @param non-empty-string $fid
+     */
+    public function withFid(string $fid): self
+    {
+        $new = clone $this;
+        $new->target = MessageTarget::with(MessageTarget::FID, $fid);
+
+        return $new;
+    }
+
+    /**
      * @param non-empty-string $token
      */
     public function withToken(string $token): self
@@ -332,6 +345,11 @@ final class CloudMessage implements Message
         $targetValue = $data[MessageTarget::CONDITION] ?? null;
         if ($targetValue !== null) {
             return MessageTarget::with(MessageTarget::CONDITION, $targetValue);
+        }
+
+        $targetValue = $data[MessageTarget::FID] ?? null;
+        if ($targetValue !== null) {
+            return MessageTarget::with(MessageTarget::FID, $targetValue);
         }
 
         $targetValue = $data[MessageTarget::TOKEN] ?? null;
