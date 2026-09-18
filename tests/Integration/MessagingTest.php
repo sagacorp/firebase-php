@@ -12,6 +12,7 @@ use Kreait\Firebase\Exception\Messaging\InvalidMessage;
 use Kreait\Firebase\Exception\Messaging\NotFound;
 use Kreait\Firebase\Exception\MessagingException;
 use Kreait\Firebase\Messaging\CloudMessage;
+use Kreait\Firebase\Messaging\FirebaseInstallationIds;
 use Kreait\Firebase\Messaging\RawMessageFromArray;
 use Kreait\Firebase\Messaging\WebPushConfig;
 use Kreait\Firebase\Tests\IntegrationTestCase;
@@ -247,6 +248,28 @@ final class MessagingTest extends IntegrationTestCase
 
         $this->assertSame($first, $items[0]->target()->value());
         $this->assertSame($second, $items[1]->target()->value());
+    }
+
+    public function testSendMessageToFirebaseInstallationId(): void
+    {
+        $message = CloudMessage::new()->withFid($this->getTestFirebaseInstallationId());
+
+        $result = $this->messaging->send($message);
+
+        $this->assertArrayHasKey('name', $result);
+    }
+
+    public function testSendMulticastMessageToFirebaseInstallationIds(): void
+    {
+        $fid = $this->getTestFirebaseInstallationId();
+
+        $report = $this->messaging->sendMulticast(
+            CloudMessage::new(),
+            FirebaseInstallationIds::fromValue([$fid]),
+        );
+
+        $this->assertCount(1, $report->successes());
+        $this->assertSame([$fid], $report->validFids());
     }
 
     /**

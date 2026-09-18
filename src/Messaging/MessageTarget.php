@@ -12,6 +12,8 @@ final readonly class MessageTarget
 {
     public const string CONDITION = 'condition';
 
+    public const string FID = 'fid';
+
     public const string TOKEN = 'token';
 
     public const string TOPIC = 'topic';
@@ -22,7 +24,7 @@ final readonly class MessageTarget
     public const string UNKNOWN = 'unknown';
 
     public const array TYPES = [
-        self::CONDITION, self::TOKEN, self::TOPIC, self::UNKNOWN,
+        self::CONDITION, self::FID, self::TOKEN, self::TOPIC, self::UNKNOWN,
     ];
 
     /**
@@ -38,7 +40,7 @@ final readonly class MessageTarget
     /**
      * Create a new message target with the given type and value.
      *
-     * @param self::CONDITION|self::TOKEN|self::TOPIC|self::UNKNOWN $type
+     * @param self::CONDITION|self::FID|self::TOKEN|self::TOPIC|self::UNKNOWN $type
      * @param non-empty-string $value
      *
      * @throws InvalidArgumentException
@@ -49,6 +51,7 @@ final readonly class MessageTarget
 
         $targetValue = match ($targetType) {
             self::CONDITION => Condition::fromValue($value)->value(),
+            self::FID => FirebaseInstallationId::fromValue($value)->value(),
             self::TOKEN => RegistrationToken::fromValue($value)->value(),
             self::TOPIC => Topic::fromValue($value)->value(),
             default => self::UNKNOWN,

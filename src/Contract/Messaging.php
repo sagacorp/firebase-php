@@ -10,6 +10,8 @@ use Kreait\Firebase\Exception\Messaging\InvalidArgument;
 use Kreait\Firebase\Exception\Messaging\InvalidMessage;
 use Kreait\Firebase\Exception\MessagingException;
 use Kreait\Firebase\Messaging\AppInstance;
+use Kreait\Firebase\Messaging\FirebaseInstallationId;
+use Kreait\Firebase\Messaging\FirebaseInstallationIds;
 use Kreait\Firebase\Messaging\Message;
 use Kreait\Firebase\Messaging\Messages;
 use Kreait\Firebase\Messaging\MulticastSendReport;
@@ -32,13 +34,13 @@ interface Messaging
 
     /**
      * @param Message|array<mixed> $message
-     * @param RegistrationTokens|RegistrationToken|list<RegistrationToken|string>|non-empty-string $registrationTokens
+     * @param RegistrationTokens|RegistrationToken|FirebaseInstallationIds|FirebaseInstallationId|list<RegistrationToken|string>|non-empty-string $registrationTokensOrFids
      *
-     * @throws InvalidArgumentException if the message is invalid or the list of registration tokens is empty
+     * @throws InvalidArgumentException if the message is invalid or the list of targets is empty
      * @throws MessagingException if the API request failed
      * @throws FirebaseException if something very unexpected happened (never :))
      */
-    public function sendMulticast(Message|array $message, RegistrationTokens|RegistrationToken|array|string $registrationTokens, bool $validateOnly = false): MulticastSendReport;
+    public function sendMulticast(Message|array $message, RegistrationTokens|RegistrationToken|FirebaseInstallationIds|FirebaseInstallationId|array|string $registrationTokensOrFids, bool $validateOnly = false): MulticastSendReport;
 
     /**
      * @param list<Message|array<mixed>>|Messages $messages

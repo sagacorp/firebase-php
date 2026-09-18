@@ -15,6 +15,8 @@ use Kreait\Firebase\Messaging\ApiClient;
 use Kreait\Firebase\Messaging\AppInstance;
 use Kreait\Firebase\Messaging\AppInstanceApiClient;
 use Kreait\Firebase\Messaging\Event\MessagesSent;
+use Kreait\Firebase\Messaging\FirebaseInstallationId;
+use Kreait\Firebase\Messaging\FirebaseInstallationIds;
 use Kreait\Firebase\Messaging\Message;
 use Kreait\Firebase\Messaging\Messages;
 use Kreait\Firebase\Messaging\MessageTarget;
@@ -76,12 +78,21 @@ final readonly class Messaging implements Contract\Messaging
         return [];
     }
 
-    public function sendMulticast(Message|array $message, RegistrationTokens|RegistrationToken|array|string $registrationTokens, bool $validateOnly = false): MulticastSendReport
+    public function sendMulticast(Message|array $message, RegistrationTokens|RegistrationToken|FirebaseInstallationIds|FirebaseInstallationId|array|string $registrationTokensOrFids, bool $validateOnly = false): MulticastSendReport
     {
         $message = $message instanceof Message ? $message : new RawMessageFromArray($message);
-        $registrationTokens = RegistrationTokens::fromValue($registrationTokens);
 
         $messages = [];
+
+        if ($registrationTokensOrFids instanceof FirebaseInstallationIds || $registrationTokensOrFids instanceof FirebaseInstallationId) {
+            foreach (FirebaseInstallationIds::fromValue($registrationTokensOrFids) as $fid) {
+                $messages[] = $this->withChangedTarget($message, $fid->value(), MessageTarget::FID);
+            }
+
+            return $this->sendAll($messages, $validateOnly);
+        }
+
+        $registrationTokens = RegistrationTokens::fromValue($registrationTokensOrFids);
 
         foreach ($registrationTokens as $registrationToken) {
             $messages[] = $this->withChangedTarget($message, $registrationToken->value());
@@ -280,21 +291,23 @@ final readonly class Messaging implements Contract\Messaging
         $check = Json::decode(Json::encode($message), true);
 
         return array_key_exists(MessageTarget::CONDITION, $check)
+            || array_key_exists(MessageTarget::FID, $check)
             || array_key_exists(MessageTarget::TOKEN, $check)
             || array_key_exists(MessageTarget::TOPIC, $check);
     }
 
-    private function withChangedTarget(Message $message, string $value): RawMessageFromArray
+    private function withChangedTarget(Message $message, string $value, string $type = MessageTarget::TOKEN): RawMessageFromArray
     {
         $message = Json::decode(Json::encode($message), true);
 
         unset(
             $message[MessageTarget::CONDITION],
+            $message[MessageTarget::FID],
             $message[MessageTarget::TOKEN],
             $message[MessageTarget::TOPIC],
         );
 
-        $message[MessageTarget::TOKEN] = $value;
+        $message[$type] = $value;
 
         return new RawMessageFromArray($message);
     }
@@ -304,11 +317,16 @@ final readonly class Messaging implements Contract\Messaging
         $message = Json::decode(Json::encode($message), true);
 
         $condition = $message[MessageTarget::CONDITION] ?? null;
+        $fid = $message[MessageTarget::FID] ?? null;
         $token = $message[MessageTarget::TOKEN] ?? null;
         $topic = $message[MessageTarget::TOPIC] ?? null;
 
         if (is_string($condition) && $condition !== '') {
             return MessageTarget::with(MessageTarget::CONDITION, $condition);
+        }
+
+        if (is_string($fid) && $fid !== '') {
+            return MessageTarget::with(MessageTarget::FID, $fid);
         }
 
         if (is_string($token) && $token !== '') {
